@@ -1,0 +1,9 @@
+<h1> Total Activities </h1>
+{% for key, value in activities.items() %}
+    <h3>{{key}}: {{value}}</h3>
+{% endfor %}
+
+<h1> Activity Stats </h1>
+{% for key, value in distance.items() %}
+    <h3>{{key}}: {{value}} miles</h3>
+{% endfor %}
