@@ -3,7 +3,13 @@
     <h3>{{key}}: {{value}}</h3>
 {% endfor %}
 
-<h1> Activity Stats </h1>
+<h1> Statistics </h1>
+<h2> All-Time </h2>
 {% for key, value in distance.items() %}
     <h3>{{key}}: {{value}} miles</h3>
+{% endfor %}
+
+{% for key, value in year.items() %}
+    <h2>{{key}}</h2>
+    <h3>Miles: {{value}}</h3>
 {% endfor %}

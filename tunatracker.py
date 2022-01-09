@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import datetime
 import json
 import os
 import requests
@@ -26,6 +27,7 @@ def exchange_token():
 
     activity_type_count = {}
     activity_distance_by_type = {}
+    stats_by_year = {}
 
     headers = {'accept': 'application/json',
                'authorization': f'Bearer {access_token}'}
@@ -42,6 +44,9 @@ def exchange_token():
         activities.extend(json.loads(res.text))
         page += 1
 
+    # with open("response", "r") as f:
+    #     activities = json.loads(f.read())
+
     for activity in activities:
         # tally up activity totals by type
         activity_type = activity["type"]
@@ -51,15 +56,24 @@ def exchange_token():
         # tally up activity distance by type
         activity_distance_by_type.setdefault(activity_type, 0)
         activity_distance_by_type[activity_type] += activity["distance"]
-    
+
+        # tally up yearly mileage
+        year = datetime.datetime.strptime(activity["start_date"], "%Y-%m-%dT%H:%M:%SZ").year
+        stats_by_year.setdefault(year, 0)
+        stats_by_year[year] += activity["distance"]
+
     # Convert to miles
     for key in activity_distance_by_type:
         activity_distance_by_type[key] = str(int(float(activity_distance_by_type[key]) * 0.000621371))
 
+    # Convert to miles
+    for key in stats_by_year:
+        stats_by_year[key] = str(int(float(stats_by_year[key]) * 0.000621371))
+
     result = ""
     result += json.dumps(activity_type_count) + "\n"
     result += json.dumps(activity_distance_by_type)
-    return render_template('stats.html', activities=activity_type_count, distance=activity_distance_by_type)
+    return render_template('stats.html', activities=activity_type_count, distance=activity_distance_by_type, year=stats_by_year)
 
 @app.route("/")
 def hello_world():
@@ -78,6 +92,6 @@ if __name__ == '__main__':
         print("ERROR: CLIENT_SECRET not set")
         sys.exit()
 
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', port=80, debug=True)
 
 
