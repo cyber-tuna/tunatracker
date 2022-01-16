@@ -80,18 +80,20 @@ def stats():
         activity_distance_by_type.setdefault(activity_type, 0)
         activity_distance_by_type[activity_type] += activity["distance"]
 
-        # tally up yearly mileage
+        # tally up yearly mileage and moving time
         year = datetime.datetime.strptime(activity["start_date"], "%Y-%m-%dT%H:%M:%SZ").year
-        stats_by_year.setdefault(year, 0)
-        stats_by_year[year] += activity["distance"]
+        stats_by_year.setdefault(year, [0,0]) # [distance, moving_time]
+        stats_by_year[year][0] += activity["distance"]
+        stats_by_year[year][1] += activity["moving_time"]
 
     # Convert to miles
     for key in activity_distance_by_type:
         activity_distance_by_type[key] = str(int(float(activity_distance_by_type[key]) * 0.000621371))
 
-    # Convert to miles
+    # Convert to miles and seconds
     for key in stats_by_year:
-        stats_by_year[key] = str(int(float(stats_by_year[key]) * 0.000621371))
+        stats_by_year[key][0] = str(int(float(stats_by_year[key][0]) * 0.000621371))
+        stats_by_year[key][1] = str(int(float(stats_by_year[key][1]) / 3600))
 
     result = ""
     result += json.dumps(activity_type_count) + "\n"

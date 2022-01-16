@@ -11,5 +11,6 @@
 
 {% for key, value in year.items() %}
     <h2>{{key}}</h2>
-    <h3>Miles: {{value}}</h3>
+    <h3>Miles: {{value[0]}}</h3>
+    <h3>Moving Time (Hours): {{value[1]}}</h3>
 {% endfor %}
