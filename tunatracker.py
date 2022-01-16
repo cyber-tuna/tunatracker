@@ -26,7 +26,7 @@ def refresh_token():
 
 @app.route("/authenticate")
 def authenticate():              
-    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
+    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://patten.server:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
 
 @app.route("/exchange_token")
 def exchange_token():
@@ -126,6 +126,7 @@ if __name__ == '__main__':
         print("ERROR: APP_SECRET not set")
         sys.exit()
 
+    app.secret_key = app_secret
     app.run(host='0.0.0.0', debug=True)
 
 
