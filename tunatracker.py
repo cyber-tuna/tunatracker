@@ -5,14 +5,28 @@ import json
 import os
 import requests
 import sys
+import time
 
-from flask import Flask, request, redirect, render_template
+from flask import Flask, request, redirect, render_template, session, url_for
 
 app = Flask(__name__)
 
+def refresh_token():
+    params = {'client_id': client_id,
+              'client_secret': client_secret,
+              'grant_type': 'refresh_token',
+              'refresh_token': session['refresh_token']}
+    
+    res = requests.post("https://www.strava.com/oauth/token", params=params)
+
+    session['access_token'] = json.loads(res.text)["access_token"]
+    session['expires_at'] = json.loads(res.text)["expires_at"]
+    session['refresh_token'] = json.loads(res.text)["refresh_token"]
+
+
 @app.route("/authenticate")
 def authenticate():              
-    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://patten.server:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
+    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
 
 @app.route("/exchange_token")
 def exchange_token():
@@ -23,17 +37,26 @@ def exchange_token():
               'grant_type': 'authorization_code'}
     
     res = requests.post("https://www.strava.com/oauth/token", params=params)
-    access_token = json.loads(res.text)["access_token"]
 
+    session['access_token'] = json.loads(res.text)["access_token"]
+    session['expires_at'] = json.loads(res.text)["expires_at"]
+    session['refresh_token'] = json.loads(res.text)["refresh_token"]
+    session['id'] = json.loads(res.text)["athlete"]["id"]
+
+    return redirect(url_for('stats'))
+
+
+@app.route("/stats")
+def stats():
     activity_type_count = {}
     activity_distance_by_type = {}
     stats_by_year = {}
 
+    access_token = session['access_token']
+
     headers = {'accept': 'application/json',
                'authorization': f'Bearer {access_token}'}
-
     activities = []
-
     page = 1
     while True:
         params = {'per_page': '100',
@@ -75,21 +98,32 @@ def exchange_token():
     result += json.dumps(activity_distance_by_type)
     return render_template('stats.html', activities=activity_type_count, distance=activity_distance_by_type, year=stats_by_year)
 
+
 @app.route("/")
-def hello_world():
-    return "<a href=\"/authenticate\">Authenticate</a>"
+def index():
+    if 'id' in session:
+        print("id in session", session['id'])
+        if int(time.time()) >= session['expires_at']:
+            refresh_token()
+        return redirect(url_for('stats'))
+    else:
+        return "<a href=\"/authenticate\">Authenticate</a>"
 
 
 # main driver function
 if __name__ == '__main__':
     client_id = os.environ.get("CLIENT_ID", None)
     client_secret = os.environ.get("CLIENT_SECRET", None)
+    app_secret = os.environ.get("APP_SECRET", None)
 
     if not client_id:
         print("ERROR: CLIENT_ID not set")
         sys.exit()
     if not client_secret:
         print("ERROR: CLIENT_SECRET not set")
+        sys.exit()
+    if not app_secret:
+        print("ERROR: APP_SECRET not set")
         sys.exit()
 
     app.run(host='0.0.0.0', debug=True)
