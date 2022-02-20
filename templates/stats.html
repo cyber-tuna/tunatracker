@@ -14,3 +14,101 @@
     <h3>Miles: {{value[0]}}</h3>
     <h3>Moving Time (Hours): {{value[1]}}</h3>
 {% endfor %}
+
+<table border="1">
+    <tr>
+        <th colspan="100%">Mileage</th></tb>
+    </tr>
+    <tr>
+        <th></th>
+        {% for year in stats.get_years() %}
+        <th>{{year}}</th>
+        {% endfor %}
+        <th>Total</th>
+    </tr>
+
+    {% for type in stats.get_activity_types() %}
+    <tr>
+        <td>{{type}}</td>
+        {% for year in stats.get_years() %}
+        <td>{{stats.get_distance_by_year_type(year, type)}}</td>
+        {% endfor %}
+        <td><b>{{stats.get_total_distance_by_type(type)}}</b></td>
+    </tr>  
+    {% endfor %}
+
+    <tr>
+        <td><b>Total</b></td>
+        {% for year in stats.get_years() %}
+        <td><b>{{stats.get_total_distance_by_year(year)}}</b></td>
+        {% endfor %}
+        <td></td>
+    </tr>
+
+</table>
+
+<br>
+
+<table border="1">
+    <tr>
+        <th colspan="100%">Moving Time</th></tb>
+    </tr>
+    <tr>
+        <th></th>
+        {% for year in stats.get_years() %}
+        <th>{{year}}</th>
+        {% endfor %}
+        <th>Total</th>
+    </tr>
+
+    {% for type in stats.get_activity_types() %}
+    <tr>
+        <td>{{type}}</td>
+        {% for year in stats.get_years() %}
+        <td>{{stats.get_moving_time_by_year_type(year, type)}}</td>
+        {% endfor %}
+        <td><b>{{stats.get_total_moving_time_by_type(type)}}</b></td>
+    </tr>  
+    {% endfor %}
+
+    <tr>
+        <td><b>Total</b></td>
+        {% for year in stats.get_years() %}
+        <td><b>{{stats.get_total_moving_time_by_year(year)}}</b></td>
+        {% endfor %}
+        <td></td>
+    </tr>
+</table> 
+
+<br>
+
+<table border="1">
+    <tr>
+        <th colspan="100%">Activity Count</th></tb>
+    </tr>
+    <tr>
+        <th></th>
+        {% for year in stats.get_years() %}
+        <th>{{year}}</th>
+        {% endfor %}
+        <th>Total</th>
+    </tr>
+
+    {% for type in stats.get_activity_types() %}
+    <tr>
+        <td>{{type}}</td>
+        {% for year in stats.get_years() %}
+        <td>{{stats.get_count_by_year_type(year, type)}}</td>
+        {% endfor %}
+        <td><b>{{stats.get_count_by_type(type)}}</b></td>
+    </tr>  
+    {% endfor %}
+
+    <tr>
+        <td><b>Total</b></td>
+        {% for year in stats.get_years() %}
+        <td><b>{{stats.get_count_by_year(year)}}</b></td>
+        {% endfor %}
+        <td></td>
+    </tr>
+</table> 
