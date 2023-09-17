@@ -18,6 +18,27 @@ class Activity:
         self.distance = distance
         self.moving_time = moving_time
 
+class Goal:
+    def __init__(self, target_miles, target_moving_time, total_miles, total_moving_time):
+        self.target_miles = target_miles
+        self.target_moving_time = target_moving_time
+
+        # Calculate the last day of the current year
+        last_day_of_year = datetime(current_date.year, 12, 31)
+
+        # Calculate the number of days remaining in the year
+        remaining_days = (last_day_of_year - current_date).days
+
+        remaining_miles = max(0, self.target_miles - total_miles)
+        # remaining_moving_time = max(0, self.target_moving_time - total_moving_time)
+
+        self.miles_per_day = remaining_miles/remaining_days
+        # self.moving_per_day = None
+        # self.miles_per_week = None
+        # self.moving_time_per_week = None
+        self.miles_percent_complete = (total_miles/target_miles)*100
+        # self.moving_time_percent_complete = None
+
 class Stats:
     def __init__(self):
         self.years = set()
@@ -132,9 +153,6 @@ def refresh_token():
     
     res = requests.post("https://www.strava.com/oauth/token", params=params)
 
-    # import pdb
-    # pdb.set_trace()
-
     session['access_token'] = json.loads(res.text)["access_token"]
     session['expires_at'] = json.loads(res.text)["expires_at"]
     session['refresh_token'] = json.loads(res.text)["refresh_token"]
@@ -142,7 +160,7 @@ def refresh_token():
 
 @app.route("/authenticate")
 def authenticate():              
-    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://patten.server:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
+    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
 
 @app.route("/exchange_token")
 def exchange_token():
@@ -174,24 +192,27 @@ def stats():
     headers = {'accept': 'application/json',
                'authorization': f'Bearer {access_token}'}
     activities = []
-    page = 1
-    while True:
-        params = {'per_page': '100',
-                'page': str(page)}
-        res = requests.get('https://www.strava.com/api/v3/athlete/activities', params=params, headers=headers)
-        if len(json.loads(res.text)) == 0:
-            break
-        activities.extend(json.loads(res.text))
-        page += 1
+    # page = 1
+    # while True:
+    #     params = {'per_page': '100',
+    #             'page': str(page)}
+    #     res = requests.get('https://www.strava.com/api/v3/athlete/activities', params=params, headers=headers)
+    #     if len(json.loads(res.text)) == 0:
+    #         break
+    #     activities.extend(json.loads(res.text))
+    #     page += 1
 
-    # with open("response", "r") as f:
-    #     activities = json.loads(f.read())
+    with open("response", "r") as f:
+        activities = json.loads(f.read())
+
+    # with open('response', 'w') as f:
+    #  f.write(json.dumps(activities))
 
     stats = Stats()
 
     for activity in activities:
         # tally up activity totals by type
-        activity_type = activity["type"]
+        activity_type = activity["sport_type"]
         activity_type_count.setdefault(activity_type, 0)
         activity_type_count[activity_type] += 1
 
@@ -208,7 +229,7 @@ def stats():
         # mileage_by_year.setdefault(year, Year(year))
         # mileage_by_year[year].add_activity(activity["type"], activity["distance"], activity["moving_time"])
 
-        stats.add_activity(Activity(activity["type"], year, activity["distance"], activity["moving_time"]))
+        stats.add_activity(Activity(activity["sport_type"], year, activity["distance"], activity["moving_time"]))
 
     # Convert to miles
     for key in activity_distance_by_type:
@@ -222,13 +243,16 @@ def stats():
     result = ""
     result += json.dumps(activity_type_count) + "\n"
     result += json.dumps(activity_distance_by_type)
+
+
+    # goal = Goal(850, 135, )
+
+
     return render_template('stats.html', activities=activity_type_count, distance=activity_distance_by_type, year=stats_by_year, mileage_by_year=mileage_by_year, stats=stats)
 
 
 @app.route("/")
 def index():
-    # import pdb
-    # pdb.set_trace()
     if 'id' in session:
         print("id in session", session['id'])
         # if int(time.time()) >= session['expires_at']:

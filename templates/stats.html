@@ -1,19 +1,11 @@
-<h1> Total Activities </h1>
-{% for key, value in activities.items() %}
-    <h3>{{key}}: {{value}}</h3>
-{% endfor %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tuna Tracker</title>
+</head>
+<body>
 
-<h1> Statistics </h1>
-<h2> All-Time </h2>
-{% for key, value in distance.items() %}
-    <h3>{{key}}: {{value}} miles</h3>
-{% endfor %}
-
-{% for key, value in year.items() %}
-    <h2>{{key}}</h2>
-    <h3>Miles: {{value[0]}}</h3>
-    <h3>Moving Time (Hours): {{value[1]}}</h3>
-{% endfor %}
+<h1>Tuna Tracker</h1>
 
 <table border="1">
     <tr>
@@ -112,3 +104,6 @@
         <td></td>
     </tr>
 </table> 
+
+</body>
+</html>
