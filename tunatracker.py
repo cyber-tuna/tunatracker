@@ -160,7 +160,7 @@ def refresh_token():
 
 @app.route("/authenticate")
 def authenticate():              
-    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://localhost:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
+    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://patten.server:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
 
 @app.route("/exchange_token")
 def exchange_token():
@@ -192,18 +192,18 @@ def stats():
     headers = {'accept': 'application/json',
                'authorization': f'Bearer {access_token}'}
     activities = []
-    # page = 1
-    # while True:
-    #     params = {'per_page': '100',
-    #             'page': str(page)}
-    #     res = requests.get('https://www.strava.com/api/v3/athlete/activities', params=params, headers=headers)
-    #     if len(json.loads(res.text)) == 0:
-    #         break
-    #     activities.extend(json.loads(res.text))
-    #     page += 1
+    page = 1
+    while True:
+        params = {'per_page': '100',
+                'page': str(page)}
+        res = requests.get('https://www.strava.com/api/v3/athlete/activities', params=params, headers=headers)
+        if len(json.loads(res.text)) == 0:
+            break
+        activities.extend(json.loads(res.text))
+        page += 1
 
-    with open("response", "r") as f:
-        activities = json.loads(f.read())
+    # with open("response", "r") as f:
+    #     activities = json.loads(f.read())
 
     # with open('response', 'w') as f:
     #  f.write(json.dumps(activities))
