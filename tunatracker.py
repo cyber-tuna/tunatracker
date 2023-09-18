@@ -23,21 +23,29 @@ class Goal:
         self.target_miles = target_miles
         self.target_moving_time = target_moving_time
 
-        # Calculate the last day of the current year
-        last_day_of_year = datetime(current_date.year, 12, 31)
+        # Get the current date
+        current_date = datetime.date.today()
+
+        # Get the last day of the current year
+        last_day_of_year = datetime.date(current_date.year, 12, 31)
 
         # Calculate the number of days remaining in the year
         remaining_days = (last_day_of_year - current_date).days
 
-        remaining_miles = max(0, self.target_miles - total_miles)
-        # remaining_moving_time = max(0, self.target_moving_time - total_moving_time)
+        # Calculate the number of weeks remaining
+        weeks_remaining = remaining_days / 7
 
-        self.miles_per_day = remaining_miles/remaining_days
-        # self.moving_per_day = None
-        # self.miles_per_week = None
-        # self.moving_time_per_week = None
-        self.miles_percent_complete = (total_miles/target_miles)*100
-        # self.moving_time_percent_complete = None
+        remaining_miles = max(0, self.target_miles - total_miles)
+        remaining_moving_time = max(0, self.target_moving_time - total_moving_time)
+
+        self.miles_per_day = round(remaining_miles/remaining_days, 2)
+        self.miles_per_week = round(remaining_miles/weeks_remaining, 2)
+
+        self.moving_per_day = round(60*(remaining_moving_time/remaining_days), 2) # minutes
+        self.moving_per_week = round(remaining_moving_time/weeks_remaining, 2)
+
+        self.miles_percent_complete = round((total_miles/target_miles)*100, 1)
+        self.moving_time_percent_complete = round((total_moving_time/target_moving_time)*100, 1)
 
 class Stats:
     def __init__(self):
@@ -245,10 +253,15 @@ def stats():
     result += json.dumps(activity_distance_by_type)
 
 
-    # goal = Goal(850, 135, )
+    goal = Goal(850, 135, stats.get_total_distance_by_year(2023), stats.get_total_moving_time_by_year(2023))
+
+    print("MMILES PER DAY", goal.miles_per_day)
+    print("MMILES PER WEEK", goal.miles_per_week)
+    print("Percent Complete miles", goal.miles_percent_complete)
+    print("Percent Complete time", goal.moving_time_percent_complete)
 
 
-    return render_template('stats.html', activities=activity_type_count, distance=activity_distance_by_type, year=stats_by_year, mileage_by_year=mileage_by_year, stats=stats)
+    return render_template('stats.html', stats=stats, goal=goal)
 
 
 @app.route("/")
