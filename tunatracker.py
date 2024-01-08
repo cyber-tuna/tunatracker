@@ -167,8 +167,10 @@ def refresh_token():
 
 
 @app.route("/authenticate")
-def authenticate():              
-    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://patten.server:5000/exchange_token&approval_prompt=force&scope=activity:read_all')
+def authenticate():
+    server_url = os.environ.get("SERVER_URL", "localhost:5000")
+    return redirect(f'http://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=http://{server_url}/exchange_token&approval_prompt=force&scope=activity:read_all')
+
 
 @app.route("/exchange_token")
 def exchange_token():
@@ -201,20 +203,22 @@ def stats():
                'authorization': f'Bearer {access_token}'}
     activities = []
     page = 1
-    while True:
-        params = {'per_page': '100',
-                'page': str(page)}
-        res = requests.get('https://www.strava.com/api/v3/athlete/activities', params=params, headers=headers)
-        if len(json.loads(res.text)) == 0:
-            break
-        activities.extend(json.loads(res.text))
-        page += 1
 
-    # with open("response", "r") as f:
-    #     activities = json.loads(f.read())
+    if os.environ.get("DEBUG", None):
+        with open("response", "r") as f:
+            activities = json.loads(f.read())
+    else:
+        while True:
+            params = {'per_page': '100',
+                    'page': str(page)}
+            res = requests.get('https://www.strava.com/api/v3/athlete/activities', params=params, headers=headers)
+            if len(json.loads(res.text)) == 0:
+                break
+            activities.extend(json.loads(res.text))
+            page += 1
 
     # with open('response', 'w') as f:
-    #  f.write(json.dumps(activities))
+    #     f.write(json.dumps(activities))
 
     stats = Stats()
 
@@ -252,8 +256,10 @@ def stats():
     result += json.dumps(activity_type_count) + "\n"
     result += json.dumps(activity_distance_by_type)
 
-
-    goal = Goal(850, 135, stats.get_total_distance_by_year(2023), stats.get_total_moving_time_by_year(2023))
+    year = datetime.datetime.now().year
+    goal_miles = int(os.environ.get("GOAL_MILES", 100))
+    goal_moving = int(os.environ.get("GOAL_MOVING", 100))
+    goal = Goal(goal_miles, goal_moving, stats.get_total_distance_by_year(year), stats.get_total_moving_time_by_year(year))
 
     print("MMILES PER DAY", goal.miles_per_day)
     print("MMILES PER WEEK", goal.miles_per_week)
@@ -274,7 +280,7 @@ def index():
             refresh_token()
         return redirect(url_for('stats'))
     else:
-        return "<a href=\"/authenticate\">Authenticate</a>"
+        return render_template('index.html', image_url='/static/btn_strava_connectwith_light.png', link_url="authenticate")
 
 
 # main driver function
