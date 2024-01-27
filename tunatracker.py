@@ -189,7 +189,6 @@ def exchange_token():
 
     return redirect(url_for('stats'))
 
-
 @app.route("/stats")
 def stats():
     activity_type_count = {}
@@ -238,10 +237,15 @@ def stats():
         stats_by_year[year][0] += activity["distance"]
         stats_by_year[year][1] += activity["moving_time"]
 
-        # mileage_by_year.setdefault(year, Year(year))
-        # mileage_by_year[year].add_activity(activity["type"], activity["distance"], activity["moving_time"])
+        activity_type = activity["sport_type"]
 
-        stats.add_activity(Activity(activity["sport_type"], year, activity["distance"], activity["moving_time"]))
+        # A hack for now to lump any activity using bike "Kinetic X or Kinetic GMC" into virtual rides.
+        # Manually ascertained the gear ID
+        if activity["gear_id"] in ["b11855420", "b8536861"] or \
+           activity["trainer"]:
+            activity_type = "VirtualRide"
+
+        stats.add_activity(Activity(activity_type, year, activity["distance"], activity["moving_time"]))
 
     # Convert to miles
     for key in activity_distance_by_type:
