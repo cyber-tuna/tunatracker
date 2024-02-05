@@ -6,10 +6,17 @@ import os
 import requests
 import sys
 import time
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
 
 from flask import Flask, request, redirect, render_template, session, url_for
 
 app = Flask(__name__)
+
+def generate_colors(num_colors):
+    # Generate a list of colors using matplotlib's default color cycle
+    return plt.cm.tab10.colors[:num_colors]
 
 class Activity:
     def __init__(self, activity_type, year, distance, moving_time):
@@ -68,12 +75,11 @@ class Stats:
         self.count_by_year_type = {}
 
     def add_activity(self, activity):
-        self.years.add(activity.year)
+        year = activity.year
+        self.years.add(year)
         self.activity_types.add(activity.activity_type)
 
         self.distance_by_year.setdefault(activity.activity_type, 0)
-
-        year = activity.year
 
         # Tally total distance by activity
         self.distance_per_activity.setdefault(activity.activity_type, 0)
@@ -220,6 +226,8 @@ def stats():
     #     f.write(json.dumps(activities))
 
     stats = Stats()
+    plot_miles = {}
+    plot_mt = {}
 
     for activity in activities:
         # tally up activity totals by type
@@ -233,6 +241,7 @@ def stats():
 
         # tally up yearly mileage and moving time
         year = datetime.datetime.strptime(activity["start_date"], "%Y-%m-%dT%H:%M:%SZ").year
+        month = datetime.datetime.strptime(activity["start_date"], "%Y-%m-%dT%H:%M:%SZ").month
         stats_by_year.setdefault(year, [0,0]) # [distance, moving_time]
         stats_by_year[year][0] += activity["distance"]
         stats_by_year[year][1] += activity["moving_time"]
@@ -245,7 +254,69 @@ def stats():
            activity["trainer"]:
             activity_type = "VirtualRide"
 
+        plot_miles.setdefault(year, [0] * 12)[month-1] += activity["distance"]
+        plot_mt.setdefault(year, [0] * 12)[month-1] += activity["moving_time"]
+
         stats.add_activity(Activity(activity_type, year, activity["distance"], activity["moving_time"]))
+
+
+    # plot mileage
+    plt.figure(figsize=(15, 6))
+
+    num_years = len(plot_miles)
+    colors = generate_colors(num_years)
+
+    for i, (year, data) in enumerate(plot_miles.items()):
+        int_data = [int(x * 0.000621371) for x in data]
+        plt.plot(range(1, 13), int_data, label=str(year), color=colors[i])
+
+    plt.xlabel('Month')
+    plt.ylabel('Miles Moved')
+    plt.title('Monthly Miles Moved by Year')
+    plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+ 
+    maximum = max([int(max(data) * 0.000621371) for data in plot_miles.values()])
+    plt.yticks(range(0, maximum + 1, 10))  # Adjust y-axis ticks
+    plt.grid(color='lightgray', linestyle='-', linewidth=0.5)
+    plt.legend()
+
+    # Convert plot to base64 encoded image
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    plot_data = base64.b64encode(buffer.getvalue()).decode()
+    buffer.close()
+
+
+
+    # plot moving time
+    plt.clf()
+    plt.figure(figsize=(15, 6))
+
+    num_years = len(plot_mt)
+    colors = generate_colors(num_years)
+
+    for i, (year, data) in enumerate(plot_mt.items()):
+        int_data = [int(x / 3600) for x in data]
+        plt.plot(range(1, 13), int_data, label=str(year), color=colors[i])
+
+    plt.xlabel('Month')
+    plt.ylabel('Moving Time')
+    plt.title('Monthly Moving Time by Year')
+    plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+    
+    maximum = max([int(max(data) / 3600) for data in plot_mt.values()])
+    plt.yticks(range(0, maximum + 1, 2))  # Adjust y-axis ticks
+    plt.grid(color='lightgray', linestyle='-', linewidth=0.5)
+    plt.legend()
+
+    # Convert plot to base64 encoded image
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    plot_data2 = base64.b64encode(buffer.getvalue()).decode()
+    buffer.close()
+
 
     # Convert to miles
     for key in activity_distance_by_type:
@@ -271,7 +342,7 @@ def stats():
     print("Percent Complete time", goal.moving_time_percent_complete)
 
 
-    return render_template('stats.html', stats=stats, goal=goal)
+    return render_template('stats.html', stats=stats, goal=goal, mile_plot=plot_data, moving_time_plot=plot_data2)
 
 
 @app.route("/")
